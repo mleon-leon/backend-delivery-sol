@@ -1,19 +1,25 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
+import { PrismaModule } from './services/prisma.module';
 import { UsersModule } from './users/users.module';
-import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
-import 'dotenv/config';
+import { CartModule } from "./cart/cart.module";
 
 @Module({
   imports: [
-    UsersModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secreto_super_seguro',
-      signOptions: { expiresIn: '1h' },
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
+    PrismaModule,
+    UsersModule,
+    AuthModule,
     ProductsModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

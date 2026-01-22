@@ -1,74 +1,82 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../services/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly jwtService: JwtService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto) {
-    try {
-      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-
-      await this.prismaService.user.create({
-        data: {
-          email: createUserDto.email,
-          password: hashedPassword,
-          birthdate: createUserDto.birthDate,
-        },
-      });
-
-      return 'This action adds a new user';
-    } catch (error: unknown) {
-      console.log(error);
-      return 'error creating user';
-    }
+  async create(data: {
+    name: string;
+    email: string;
+    password: string;
+    birthdate: string;
+    role?: Role;
+  }) {
+    return this.prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        birthdate: new Date(data.birthdate),
+        role: data.role ?? Role.USER,
+      },
+    });
   }
 
-  async login(email: string, password: string) {
-    const user = await this.prismaService.user.findUnique({
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
       where: { email },
+    });
+  }
+
+  async findById(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        birthdate: true,
+        createdAt: true,
+      },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Credenciales incorrectas');
+      throw new NotFoundException('User not found');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales incorrectas');
-    }
-
-    const payload = {
-      sub: user.id,
-      email: user.email,
-    };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    return user;
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async updateRole(userId: number, role: Role) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        birthdate: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+
+
 }
