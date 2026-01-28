@@ -1,7 +1,4 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
+import { Controller, Get, UseGuards,
 } from '@nestjs/common';
 
 import { UsersService } from './users.service';
@@ -15,9 +12,11 @@ import { Role } from '../common/enums/role.enum';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Get()
   findAll() {
     return this.usersService.findAll();
   }
+
 }

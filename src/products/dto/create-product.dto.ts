@@ -12,4 +12,9 @@ export class CreateProductDto {
 
     @IsInt()
     categoryId: number;
+
+    @IsString()
+    image?: string;
+
+
 }
